@@ -1,0 +1,28 @@
+package com.techpixe.service;
+
+import org.springframework.data.domain.Page;
+
+import com.techpixe.dto.EmailRegisterRequestDto;
+import com.techpixe.dto.UserRegisterDto;
+import com.techpixe.dto.UserResponseDto;
+import com.techpixe.dto.UserUpdateRequestDto;
+import com.techpixe.dto.VerifyEmailOtpDto;
+
+public interface UserService 
+{
+	//------------------------------
+	void registerUser(UserRegisterDto userRegisterDto);
+	
+	void initiateEmailRegistration(EmailRegisterRequestDto emailRegisterRequestDto);
+	
+	void verifyEmailOtp(VerifyEmailOtpDto verifyEmailOtpDto);
+	
+	//------------------------------
+	UserResponseDto getUser(Long userId);
+	
+	Page<UserResponseDto> getUsersWithPagination(int page, int size);
+	
+	void updateUser(Long userId, UserUpdateRequestDto userUpdateRequestDto);
+	
+	void deleteUser(Long userId);
+}
