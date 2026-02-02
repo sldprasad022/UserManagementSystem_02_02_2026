@@ -3,10 +3,14 @@ package com.techpixe.service;
 import org.springframework.data.domain.Page;
 
 import com.techpixe.dto.EmailRegisterRequestDto;
+import com.techpixe.dto.LoginRequestDto;
+import com.techpixe.dto.LoginResponseDto;
 import com.techpixe.dto.UserRegisterDto;
 import com.techpixe.dto.UserResponseDto;
 import com.techpixe.dto.UserUpdateRequestDto;
 import com.techpixe.dto.VerifyEmailOtpDto;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 public interface UserService 
 {
@@ -25,4 +29,7 @@ public interface UserService
 	void updateUser(Long userId, UserUpdateRequestDto userUpdateRequestDto);
 	
 	void deleteUser(Long userId);
+	//-------------------------------
+	LoginResponseDto login(LoginRequestDto loginRequestDto, HttpServletRequest httpServletRequest);
+	
 }

@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.techpixe.dto.APIResponse;
 import com.techpixe.dto.EmailRegisterRequestDto;
+import com.techpixe.dto.LoginRequestDto;
+import com.techpixe.dto.LoginResponseDto;
 import com.techpixe.dto.UserRegisterDto;
 import com.techpixe.dto.VerifyEmailOtpDto;
 import com.techpixe.service.UserService;
@@ -18,6 +20,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 @RestController
@@ -54,17 +57,26 @@ public class AuthController
 		return ResponseEntity.ok(APIResponse.success(HttpStatus.OK.value(), "Email verified successfully", null));
 	}
 	
-	@PostMapping("/register")
-	@Operation(summary = "Register user",description = "`Registers` a `new user` after `email verification`")
 	@ApiResponses({
         @ApiResponse(responseCode = "201", description = "User registered successfully"),
         @ApiResponse(responseCode = "403", description = "Email not verified"),
         @ApiResponse(responseCode = "409", description = "User already registered")
-    })            
+    })
+	@Operation(summary = "Register user",description = "`Registers` a `new user` after `email verification`")
+	@PostMapping("/register")       
 	public ResponseEntity<APIResponse<Void>> registerUser(@Valid @RequestBody UserRegisterDto userRegisterDto)
 	{
 		userService.registerUser(userRegisterDto);
 		return ResponseEntity.status(HttpStatus.CREATED).body(APIResponse.success(HttpStatus.CREATED.value(), "User registered successfully", null));
+	}
+	
+	
+	@Operation(summary = "User login",description = "Authenticates user using `email` and `password` and `returns JWT token on successful login`")	
+	@PostMapping("/login")
+	public ResponseEntity<APIResponse<LoginResponseDto>> login(@Valid @RequestBody LoginRequestDto loginRequestDto, HttpServletRequest httpServletRequest)
+	{
+		LoginResponseDto result = userService.login(loginRequestDto, httpServletRequest);
+		return ResponseEntity.ok(APIResponse.success(HttpStatus.OK.value(), "Login successfull", result));
 	}
 	
 }

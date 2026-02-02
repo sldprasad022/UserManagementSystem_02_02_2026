@@ -43,14 +43,14 @@ public class UserController
 		return ResponseEntity.ok(APIResponse.success(HttpStatus.OK.value(), "User data retrieved successfully", result));	
 	}
 	
-	@PatchMapping("/update/{userId}")
+	@PatchMapping("/{userId}")
 	public ResponseEntity<APIResponse<Void>> updateUser(@PathVariable Long userId,@Valid @RequestBody UserUpdateRequestDto userUpdateRequestDto)
 	{
 		userService.updateUser(userId, userUpdateRequestDto);
 		return ResponseEntity.ok(APIResponse.success(HttpStatus.OK.value(), "User updated successfully", null));		
 	}
 	
-	@DeleteMapping("/delete/{userId}")
+	@DeleteMapping("/{userId}")
 	public ResponseEntity<APIResponse<Void>> deleteUser(@PathVariable Long userId)
 	{
 		userService.deleteUser(userId);

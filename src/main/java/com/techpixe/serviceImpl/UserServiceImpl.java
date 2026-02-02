@@ -15,12 +15,16 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.techpixe.dto.EmailRegisterRequestDto;
+import com.techpixe.dto.LoginRequestDto;
+import com.techpixe.dto.LoginResponseDto;
 import com.techpixe.dto.UserRegisterDto;
 import com.techpixe.dto.UserResponseDto;
 import com.techpixe.dto.UserUpdateRequestDto;
 import com.techpixe.dto.VerifyEmailOtpDto;
+import com.techpixe.entity.LoginAudit;
 import com.techpixe.entity.User;
 import com.techpixe.enums.Role;
+import com.techpixe.exception.AuthenticationException;
 import com.techpixe.exception.EmailAlreadyExistsException;
 import com.techpixe.exception.EmailNotVerifiedException;
 import com.techpixe.exception.OTPMismatchException;
@@ -29,17 +33,26 @@ import com.techpixe.exception.OtpNotRequestedException;
 import com.techpixe.exception.PasswordMismatchException;
 import com.techpixe.exception.UserAlreadyRegisteredException;
 import com.techpixe.exception.UserNotFoundException;
+import com.techpixe.repository.LoginAuditRepository;
 import com.techpixe.repository.UserRepository;
 import com.techpixe.service.UserService;
+import com.techpixe.util.JwtUtils;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import jakarta.servlet.http.HttpServletRequest;
 
 @Service
 public class UserServiceImpl implements UserService {
 
 	@Autowired
 	private UserRepository userRepository;
+	
+	@Autowired
+	private LoginAuditRepository loginAuditRepository;
+	
+	@Autowired
+	private JwtUtils jwtUtils;
 	
 	@Autowired
 	private PasswordEncoder passwordEncoder;
@@ -51,6 +64,10 @@ public class UserServiceImpl implements UserService {
 	private String fromMail;
 
 	private static final int OTP_VALIDITY_MINUTES = 2;
+	
+	private static final int MAX_ATTEMPTS = 5;
+	
+    private static final int LOCK_DURATION_MINUTES = 10;
 
 	public static String generateOTP() 
 	{
@@ -276,6 +293,68 @@ public class UserServiceImpl implements UserService {
 	{
 		User user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException("User not found"));
 		userRepository.delete(user);
+	}
+
+
+
+	@Override
+	public LoginResponseDto login(LoginRequestDto loginRequestDto, HttpServletRequest httpServletRequest)
+	{
+
+	    String email = loginRequestDto.getEmail();
+	    String password = loginRequestDto.getPassword();
+
+	    LoginAudit audit = new LoginAudit();
+	    audit.setEmail(email);
+	    audit.setAttemptTime(LocalDateTime.now());
+	    audit.setIpAddress(httpServletRequest.getRemoteAddr());
+	    audit.setUserAgent(httpServletRequest.getHeader("User-Agent"));
+
+	    Optional<User> optionalUser = userRepository.findByEmail(email);
+	    if (optionalUser.isEmpty())
+	    {
+	        audit.setSuccess(false);
+	        loginAuditRepository.save(audit);
+	        throw new AuthenticationException("Invalid credentials.");
+	    }
+
+	    User user = optionalUser.get();
+	    if (user.getAccountLockedUntil() != null && user.getAccountLockedUntil().isAfter(LocalDateTime.now())) 
+	    {
+	        audit.setSuccess(false);
+	        loginAuditRepository.save(audit);
+	        //throw new AuthenticationException("Account is locked until " + user.getAccountLockedUntil().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+	        throw new AuthenticationException("Account is locked. Try again later.");
+	    }
+	    
+	    if (!passwordEncoder.matches(password, user.getPassword()))
+	    {
+	        user.setFailedLoginAttempts(user.getFailedLoginAttempts() + 1);
+	        if (user.getFailedLoginAttempts() >= MAX_ATTEMPTS) 
+	        {
+	            user.setAccountLockedUntil(LocalDateTime.now().plusMinutes(LOCK_DURATION_MINUTES));
+	        }
+	        userRepository.save(user);
+
+	        audit.setSuccess(false);
+	        loginAuditRepository.save(audit);
+	        throw new AuthenticationException("Invalid credentials.");
+	    }
+
+	    // Successful login
+	    user.setFailedLoginAttempts(0);
+	    user.setAccountLockedUntil(null);
+	    user.setLastLogin(LocalDateTime.now());
+	    userRepository.save(user);
+	    
+
+	    audit.setSuccess(true);
+	    loginAuditRepository.save(audit);
+
+	    String token = jwtUtils.generateToken(user.getEmail(), user.getRole().name());
+	    UserResponseDto userResponseDto = UserResponseDto.fromEntity(user);
+
+	    return new LoginResponseDto(token, userResponseDto);
 	}
 
 }

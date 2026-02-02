@@ -127,5 +127,12 @@ public class GlobalExceptionHandler
 				.body(APIResponse.failure(HttpStatus.CONFLICT.value(), ex.getMessage()));
 	}
 	
+	@ExceptionHandler(AuthenticationException.class)
+	public ResponseEntity<APIResponse<Object>> handleAuthentication(AuthenticationException ex) 
+	{
+		return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+				.body(APIResponse.failure(HttpStatus.UNAUTHORIZED.value(), ex.getMessage()));
+	}
+	
 	
 }
