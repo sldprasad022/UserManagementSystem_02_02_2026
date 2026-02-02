@@ -10,6 +10,7 @@ import com.techpixe.dto.LoginRequestDto;
 import com.techpixe.dto.LoginResponseDto;
 import com.techpixe.dto.UserRegisterDto;
 import com.techpixe.dto.UserResponseDto;
+import com.techpixe.dto.UserSummaryCountDto;
 import com.techpixe.dto.UserUpdateRequestDto;
 import com.techpixe.dto.VerifyEmailOtpDto;
 
@@ -42,8 +43,15 @@ public interface UserService
 	void resendForgotPasswordSendOTP(ForgotPasswordOtpRequestDto forgotPasswordOtpRequestDto);
 	
 	void changePassword(Long userId, ChangePasswordRequestDto changePasswordRequestDto);
+	//-------------------------------
+	UserSummaryCountDto getUserStatusCount();
 	
+	String toggleUserStatus(Long userId);
 	
-
+	Page<UserResponseDto> searchUsers(String keyword, int page,int size);
+	
+	Page<UserResponseDto> getActiveUsers(int page, int size);
+	
+	Page<UserResponseDto> getInActiveUsers(int page, int size);
 	
 }

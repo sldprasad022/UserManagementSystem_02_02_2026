@@ -23,7 +23,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/user")
-@Tag(name = "User Module",description = "APIs related to user module")
+@Tag(name = "User Module",description = "API's related to user module")
 public class UserController 
 {
 	@Autowired
