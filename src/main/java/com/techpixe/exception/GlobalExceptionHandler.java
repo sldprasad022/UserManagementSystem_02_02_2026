@@ -141,5 +141,14 @@ public class GlobalExceptionHandler
 				.body(APIResponse.failure(HttpStatus.UNAUTHORIZED.value(), ex.getMessage()));
 	}
 	
+	@ExceptionHandler(UserAccountDeactivatedException.class)
+	public ResponseEntity<APIResponse<Object>> handleUserAccountDeactivate(UserAccountDeactivatedException ex) 
+	{
+		return ResponseEntity.status(HttpStatus.FORBIDDEN)
+				.body(APIResponse.failure(HttpStatus.FORBIDDEN.value(), ex.getMessage()));
+	}
+	
+	
+	
 	
 }

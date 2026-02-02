@@ -34,6 +34,7 @@ import com.techpixe.exception.OTPMismatchException;
 import com.techpixe.exception.OtpExpiredException;
 import com.techpixe.exception.OtpNotRequestedException;
 import com.techpixe.exception.PasswordMismatchException;
+import com.techpixe.exception.UserAccountDeactivatedException;
 import com.techpixe.exception.UserAlreadyRegisteredException;
 import com.techpixe.exception.UserNotFoundException;
 import com.techpixe.notification.EmailOTPVerificationForRegistration;
@@ -68,9 +69,9 @@ public class UserServiceImpl implements UserService {
 
 	private static final int OTP_VALIDITY_MINUTES = 2;
 	
-	private static final int MAX_ATTEMPTS = 5;
+	private static final int MAX_ATTEMPTS = 3;
 	
-    private static final int LOCK_DURATION_MINUTES = 10;
+    private static final int LOCK_DURATION_MINUTES = 4;
     
 
 	public static String generateOTP() 
@@ -200,7 +201,7 @@ public class UserServiceImpl implements UserService {
 		{
 			user.setUserName(userUpdateRequestDto.getUserName());
 		}
-
+		user.setUpdatedAt(LocalDateTime.now());
 		userRepository.save(user);
 	}
 
@@ -252,6 +253,13 @@ public class UserServiceImpl implements UserService {
 	        audit.setSuccess(false);
 	        loginAuditRepository.save(audit);
 	        throw new AuthenticationException("Invalid credentials.");
+	    }
+	    
+	    if (!user.isActive()) 
+	    {
+	        audit.setSuccess(false);
+	        loginAuditRepository.save(audit);
+	        throw new UserAccountDeactivatedException("Your account has been deactivated. Please contact admin.");      
 	    }
 
 	    // Successful login
