@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.techpixe.dto.APIResponse;
 import com.techpixe.dto.EmailRegisterRequestDto;
+import com.techpixe.dto.ForgotPasswordDto;
+import com.techpixe.dto.ForgotPasswordOtpRequestDto;
 import com.techpixe.dto.LoginRequestDto;
 import com.techpixe.dto.LoginResponseDto;
 import com.techpixe.dto.UserRegisterDto;
@@ -78,5 +80,30 @@ public class AuthController
 		LoginResponseDto result = userService.login(loginRequestDto, httpServletRequest);
 		return ResponseEntity.ok(APIResponse.success(HttpStatus.OK.value(), "Login successfull", result));
 	}
+	
+	@Operation(summary = "Send OTP for forgot password",description = "Sends a `One-Time Password (OTP)` to the registered `email` for `password reset`")
+	@PostMapping("/forgot-password/send-otp")
+	public ResponseEntity<APIResponse<Void>> forgotPasswordSendOtp(@Valid @RequestBody ForgotPasswordOtpRequestDto forgotPasswordOtpRequestDto)
+	{    
+	    userService.forgotPasswordSendOTP(forgotPasswordOtpRequestDto);
+	    return ResponseEntity.ok(APIResponse.success(HttpStatus.OK.value(), "OTP sent successfully", null));   
+	}
+	
+	@Operation(summary = "Reset password using OTP",description = "`Resets the user's password` after `verifying the OTP sent to the registered email`")
+	@PostMapping("/forgot-password")
+	public ResponseEntity<APIResponse<Void>> forgotPassword(@Valid @RequestBody ForgotPasswordDto forgotPasswordDto)
+	{
+		userService.forgotPassword(forgotPasswordDto);
+		return ResponseEntity.ok(APIResponse.success(HttpStatus.OK.value(), "Password changed successfully", null));
+	}
+	
+	@Operation(summary = "Resend OTP for forgot password",description = "`Resends a new OTP` to the registered `email` if the `previous OTP expired` or `was lost`")
+	@PostMapping("/forgot-password/re-send-otp")
+	public ResponseEntity<APIResponse<Void>> forgotPasswordReSendOtp(@Valid @RequestBody ForgotPasswordOtpRequestDto forgotPasswordOtpRequestDto)
+	{    
+	    userService.resendForgotPasswordSendOTP(forgotPasswordOtpRequestDto);
+	    return ResponseEntity.ok(APIResponse.success(HttpStatus.OK.value(), "OTP sent successfully", null));   
+	}
+
 	
 }

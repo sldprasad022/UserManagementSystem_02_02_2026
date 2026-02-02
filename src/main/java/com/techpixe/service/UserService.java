@@ -2,7 +2,10 @@ package com.techpixe.service;
 
 import org.springframework.data.domain.Page;
 
+import com.techpixe.dto.ChangePasswordRequestDto;
 import com.techpixe.dto.EmailRegisterRequestDto;
+import com.techpixe.dto.ForgotPasswordDto;
+import com.techpixe.dto.ForgotPasswordOtpRequestDto;
 import com.techpixe.dto.LoginRequestDto;
 import com.techpixe.dto.LoginResponseDto;
 import com.techpixe.dto.UserRegisterDto;
@@ -31,5 +34,16 @@ public interface UserService
 	void deleteUser(Long userId);
 	//-------------------------------
 	LoginResponseDto login(LoginRequestDto loginRequestDto, HttpServletRequest httpServletRequest);
+	
+	void forgotPasswordSendOTP(ForgotPasswordOtpRequestDto forgotPasswordOtpRequestDto);
+	
+	void forgotPassword(ForgotPasswordDto forgotPasswordDto);
+	
+	void resendForgotPasswordSendOTP(ForgotPasswordOtpRequestDto forgotPasswordOtpRequestDto);
+	
+	void changePassword(Long userId, ChangePasswordRequestDto changePasswordRequestDto);
+	
+	
+
 	
 }

@@ -14,7 +14,10 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.techpixe.dto.ChangePasswordRequestDto;
 import com.techpixe.dto.EmailRegisterRequestDto;
+import com.techpixe.dto.ForgotPasswordDto;
+import com.techpixe.dto.ForgotPasswordOtpRequestDto;
 import com.techpixe.dto.LoginRequestDto;
 import com.techpixe.dto.LoginResponseDto;
 import com.techpixe.dto.UserRegisterDto;
@@ -27,12 +30,14 @@ import com.techpixe.enums.Role;
 import com.techpixe.exception.AuthenticationException;
 import com.techpixe.exception.EmailAlreadyExistsException;
 import com.techpixe.exception.EmailNotVerifiedException;
+import com.techpixe.exception.IncorrectOldPasswordException;
 import com.techpixe.exception.OTPMismatchException;
 import com.techpixe.exception.OtpExpiredException;
 import com.techpixe.exception.OtpNotRequestedException;
 import com.techpixe.exception.PasswordMismatchException;
 import com.techpixe.exception.UserAlreadyRegisteredException;
 import com.techpixe.exception.UserNotFoundException;
+import com.techpixe.notification.EmailTemplateForForgotPassword;
 import com.techpixe.repository.LoginAuditRepository;
 import com.techpixe.repository.UserRepository;
 import com.techpixe.service.UserService;
@@ -56,6 +61,9 @@ public class UserServiceImpl implements UserService {
 	
 	@Autowired
 	private PasswordEncoder passwordEncoder;
+	
+	@Autowired
+	private EmailTemplateForForgotPassword emailTemplateForForgotPassword;
 
 	@Autowired
 	private JavaMailSender javaMailSender;
@@ -68,6 +76,7 @@ public class UserServiceImpl implements UserService {
 	private static final int MAX_ATTEMPTS = 5;
 	
     private static final int LOCK_DURATION_MINUTES = 10;
+    
 
 	public static String generateOTP() 
 	{
@@ -202,7 +211,7 @@ public class UserServiceImpl implements UserService {
 	@Override
 	public void verifyEmailOtp(VerifyEmailOtpDto verifyEmailOtpDto) 
 	{
-		User user = userRepository.findByEmail(verifyEmailOtpDto.getEmail()).orElseThrow(() -> new UserNotFoundException("User not found"));
+		User user = userRepository.findByEmail(verifyEmailOtpDto.getEmail()).orElseThrow(() -> new UserNotFoundException("Email not found"));
 		        	
 		if (user.getOtp()==null || user.getOtpExpiry()==null)
 		{
@@ -325,8 +334,7 @@ public class UserServiceImpl implements UserService {
 	        loginAuditRepository.save(audit);
 	        //throw new AuthenticationException("Account is locked until " + user.getAccountLockedUntil().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
 	        throw new AuthenticationException("Account is locked. Try again later.");
-	    }
-	    
+	    }	    
 	    if (!passwordEncoder.matches(password, user.getPassword()))
 	    {
 	        user.setFailedLoginAttempts(user.getFailedLoginAttempts() + 1);
@@ -345,9 +353,9 @@ public class UserServiceImpl implements UserService {
 	    user.setFailedLoginAttempts(0);
 	    user.setAccountLockedUntil(null);
 	    user.setLastLogin(LocalDateTime.now());
+	    
 	    userRepository.save(user);
 	    
-
 	    audit.setSuccess(true);
 	    loginAuditRepository.save(audit);
 
@@ -356,5 +364,92 @@ public class UserServiceImpl implements UserService {
 
 	    return new LoginResponseDto(token, userResponseDto);
 	}
+
+
+
+	@Override
+	public void forgotPasswordSendOTP(ForgotPasswordOtpRequestDto forgotPasswordOtpRequestDto) 
+	{
+		User user = userRepository.findByEmail(forgotPasswordOtpRequestDto.getEmail())
+	            .orElseThrow(() -> new UserNotFoundException("Email not found"));
+
+	    String otp = generateOTP();
+	    user.setOtp(passwordEncoder.encode(otp));
+	    user.setOtpExpiry(LocalDateTime.now().plusMinutes(OTP_VALIDITY_MINUTES));
+
+	    userRepository.save(user);
+
+	    emailTemplateForForgotPassword.sendForgotPasswordOtp(user, otp);
+		
+	}
+	
+	
+	@Override
+	public void forgotPassword(ForgotPasswordDto forgotPasswordDto)
+	{
+
+	    User user = userRepository.findByEmail(forgotPasswordDto.getEmail())
+	            .orElseThrow(() -> new UserNotFoundException("Email not found"));
+
+	    if (user.getOtp() == null || user.getOtpExpiry() == null) 
+	    {
+	    	throw new OtpNotRequestedException("No OTP request found");
+	    }
+	    if (user.getOtpExpiry().isBefore(LocalDateTime.now())) 
+	    {
+	        throw new OtpExpiredException("OTP expired");
+	    }
+	    if (!passwordEncoder.matches(forgotPasswordDto.getOtp(), user.getOtp())) 
+	    {
+	    	throw new OTPMismatchException(" Invalid OTP. Please check and try again.");
+	    }
+
+	    user.setPassword(passwordEncoder.encode(forgotPasswordDto.getNewPassword()));
+	    user.setOtp(null);
+	    user.setOtpExpiry(null);
+
+	    userRepository.save(user);
+	}
+
+	@Override
+	public void resendForgotPasswordSendOTP(ForgotPasswordOtpRequestDto forgotPasswordOtpRequestDto) 
+	{
+		User user = userRepository.findByEmail(forgotPasswordOtpRequestDto.getEmail())
+	            .orElseThrow(() -> new UserNotFoundException("Email not found"));
+
+	    String otp = generateOTP();
+	    user.setOtp(passwordEncoder.encode(otp));
+	    user.setOtpExpiry(LocalDateTime.now().plusMinutes(OTP_VALIDITY_MINUTES));
+
+	    userRepository.save(user);
+
+	    emailTemplateForForgotPassword.sendForgotPasswordOtp(user, otp);
+	}
+
+
+
+	@Override
+	public void changePassword(Long userId, ChangePasswordRequestDto changePasswordRequestDto) 
+	{
+		User user = userRepository.findById(userId).orElseThrow(()-> new UserNotFoundException("User not found"));
+		
+		if (!changePasswordRequestDto.getNewPassword().equals(changePasswordRequestDto.getConfirmPassword())) 
+		{
+			throw new PasswordMismatchException("Password and Confirm Password do not match");
+		}
+		if (!passwordEncoder.matches(changePasswordRequestDto.getCurrentPassword(),user.getPassword()))
+		{
+			throw new IncorrectOldPasswordException("Invalid Credentials");
+		}
+		
+		user.setPassword(passwordEncoder.encode(changePasswordRequestDto.getNewPassword()));
+		userRepository.save(user);
+	}
+
+
+
+	
+
+
 
 }

@@ -134,5 +134,12 @@ public class GlobalExceptionHandler
 				.body(APIResponse.failure(HttpStatus.UNAUTHORIZED.value(), ex.getMessage()));
 	}
 	
+	@ExceptionHandler(IncorrectOldPasswordException.class)
+	public ResponseEntity<APIResponse<Object>> handleAuthentication(IncorrectOldPasswordException ex) 
+	{
+		return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+				.body(APIResponse.failure(HttpStatus.UNAUTHORIZED.value(), ex.getMessage()));
+	}
+	
 	
 }

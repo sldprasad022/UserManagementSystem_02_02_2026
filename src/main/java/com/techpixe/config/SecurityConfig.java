@@ -43,8 +43,8 @@ public class SecurityConfig
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(AUTH_WHITE_LIST).permitAll()
-                //.requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
-                //.requestMatchers("/api/v1/events/**","/api/v1/feedback/**","/api/v1/event-creator/**").hasRole("EVENTCREATOR")    
+                .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/v1/user/**").hasAnyRole("USER","ADMIN")    
                 .anyRequest().authenticated()
             )
             .exceptionHandling(ex -> ex
