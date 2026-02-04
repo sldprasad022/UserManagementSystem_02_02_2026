@@ -37,10 +37,9 @@ import com.techpixe.exception.PasswordMismatchException;
 import com.techpixe.exception.UserAccountDeactivatedException;
 import com.techpixe.exception.UserAlreadyRegisteredException;
 import com.techpixe.exception.UserNotFoundException;
-import com.techpixe.notification.EmailOTPVerificationForRegistration;
-import com.techpixe.notification.EmailTemplateForForgotPassword;
 import com.techpixe.repository.LoginAuditRepository;
 import com.techpixe.repository.UserRepository;
+import com.techpixe.service.EmailService;
 import com.techpixe.service.UserService;
 import com.techpixe.util.JwtUtils;
 
@@ -53,6 +52,9 @@ public class UserServiceImpl implements UserService {
 	private UserRepository userRepository;
 	
 	@Autowired
+	private EmailService emailService;
+	
+	@Autowired
 	private LoginAuditRepository loginAuditRepository;
 	
 	@Autowired
@@ -60,12 +62,6 @@ public class UserServiceImpl implements UserService {
 	
 	@Autowired
 	private PasswordEncoder passwordEncoder;
-	
-	@Autowired
-	private EmailOTPVerificationForRegistration emailOTPVerificationForRegistration;
-	
-	@Autowired
-	private EmailTemplateForForgotPassword emailTemplateForForgotPassword;
 
 	private static final int OTP_VALIDITY_MINUTES = 2;
 	
@@ -115,7 +111,9 @@ public class UserServiceImpl implements UserService {
 	    
 	    userRepository.save(user);
 	    
-	    emailOTPVerificationForRegistration.sendEmailOtp(email, generatedOTP);
+	    emailService.sendRegistrationOtp(email,generatedOTP,OTP_VALIDITY_MINUTES);
+	
+	    //emailOTPVerificationForRegistration.sendEmailOtp(email, generatedOTP);
 	}
 	
 	@Override
@@ -290,7 +288,8 @@ public class UserServiceImpl implements UserService {
 
 	    userRepository.save(user);
 
-	    emailTemplateForForgotPassword.sendForgotPasswordOtp(user, otp);
+	    emailService.sendForgotPasswordOtp(user,otp,OTP_VALIDITY_MINUTES);	
+	    //emailTemplateForForgotPassword.sendForgotPasswordOtp(user, otp);
 		
 	}
 	
@@ -333,7 +332,8 @@ public class UserServiceImpl implements UserService {
 
 	    userRepository.save(user);
 
-	    emailTemplateForForgotPassword.sendForgotPasswordOtp(user, otp);
+	    emailService.sendForgotPasswordOtp(user,otp,OTP_VALIDITY_MINUTES);
+	    //emailTemplateForForgotPassword.sendForgotPasswordOtp(user, otp);
 	}
 
 	@Override
